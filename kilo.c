@@ -1,7 +1,6 @@
 
 /*** includes ***/
 
-#include <asm-generic/ioctls.h>
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,7 +13,7 @@
 /*** defines ***/
 
 #define BUFFER_SIZE 32
-#define CTRL_KEY(k) ((k) & 0x1f)
+#define CTRL_KEY(k) ((k)&0x1f)
 
 /*** data ***/
 
@@ -22,7 +21,7 @@ struct editorConfig
 {
     int screenrows;
     int screencolumns;
-    struct termios original_termios;  
+    struct termios original_termios;
 };
 
 struct editorConfig E;
@@ -57,14 +56,14 @@ void enableRawMode()
 
     // structure storage flags for our environment
     struct termios raw = E.original_termios;
-    
+
     // flipping bits in raw.c_lflag ("local flags") for not echoing
     // and for disabling canonical mode for immediately read bit by bit
     // not line by line
     // also disabling ctrl-z ctrl-c
     // disabling ctrl-v
     raw.c_lflag &= ~(ECHO | ICANON | ISIG | IEXTEN);
-    
+
     // disabling ctrl-s and ctrl-q
     // disabling ctrl-m
     raw.c_iflag &= ~(BRKINT | INPCK | ISTRIP | IXON | ICRNL);
@@ -72,7 +71,7 @@ void enableRawMode()
     // disabling post-processing output (disabling auto-adding "\r\n")
     raw.c_oflag &= ~(OPOST);
     raw.c_cflag |= (CS8);
-    
+
     // data what to be read if input is waiting from user
     raw.c_cc[VMIN] = 0;
     // time between adding new idle items
@@ -82,16 +81,15 @@ void enableRawMode()
     // and discards any input that hasn't been read
     if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1)
         die("tcsetattr");
-
 }
 
 char editorReadKey()
 {
     int nread;
     char c;
-    
+
     // reading bit by bit to var while no error
-    while ((nread = read(STDIN_FILENO, &c, 1))== -1)
+    while ((nread = read(STDIN_FILENO, &c, 1)) == -1)
     {
         if (nread == -1 && errno != EAGAIN)
             die("read");
@@ -110,7 +108,7 @@ int getCursorPosition(int *rows, int *colums)
     {
         return -1;
     }
-    
+
     while (index < BUFFER_SIZE - 1)
     {
         if (read(STDIN_FILENO, &buffer[index], 1) != 1)
@@ -135,7 +133,7 @@ int getCursorPosition(int *rows, int *colums)
     {
         return -1;
     }
-    
+
     return 0;
 }
 
@@ -143,7 +141,7 @@ int getWindowSize(int *rows, int *colums)
 {
     // getting windows size
     struct winsize ws;
-    
+
     // ioctl setting up to windows size params
     if ((ioctl(STDIN_FILENO, TIOCGWINSZ, &ws) == -1) || ws.ws_col == 0)
     {
@@ -171,7 +169,10 @@ struct append_buffer
     int len;
 };
 
-#define APPEND_BUFFER_INIT {NULL, 0}
+#define APPEND_BUFFER_INIT \
+    {                      \
+        NULL, 0            \
+    }
 
 void ab_append(struct append_buffer *ab, const char *s, int len)
 {
@@ -234,13 +235,13 @@ void editorProcessKeypress()
 
     switch (c)
     {
-        case CTRL_KEY('q'):
-            // clear entire screen
-            write(STDIN_FILENO, "\x1b[2J", 4);
-            // move cursor to upper left side
-            write(STDIN_FILENO, "\x1b[H", 3);
-            exit(0);
-            break;
+    case CTRL_KEY('q'):
+        // clear entire screen
+        write(STDIN_FILENO, "\x1b[2J", 4);
+        // move cursor to upper left side
+        write(STDIN_FILENO, "\x1b[H", 3);
+        exit(0);
+        break;
     }
 }
 
@@ -259,7 +260,6 @@ int main(void)
     // setting up window size of terminal
     initEditor();
 
-
     // reading 1 bit and setting that bit to [c]
     while (1)
     {
@@ -269,4 +269,3 @@ int main(void)
 
     return 0;
 }
-
